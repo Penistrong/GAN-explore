@@ -24,23 +24,24 @@ class Decoder(nn.Module):
     GRAF为了学习NeRFs的隐空间，将物体形状(shape)和外观(appearance)特点的隐向量z_s与z_a添加到MLP层的输入里
     GIRAFFE作者改进了这个方法，用更通用的M_f维特征f替代输出的3维RGB值c
 
-    Params:
-        hidden_size -> int : 解码器网络的隐藏层大小
-        num_layers -> int : 网络层数
-        num_layers_view -> int : 景深(view-depth)网络层数
-        skips -> list : 网络中需要添加跳连的网络层编号，用列表装载
-        use_view_direction -> bool : 是否需要使用视角方向
-        max_freq_pos_enc -> int :  3D坐标位置编码的最大频率
-        max_freq_pos_enc_vd -> int : 视角方向位置编码的最大频率
-        input_dim -> int : 输入维数
-        z_dim -> int : 隐向量z的维数
-        out_dim_feat -> int : 模型预测 特征/RGB 的输出维数
-        use_final_actvn -> bool : 是否在 特征/RGB 输出层上应用激活函数(论文中使用sigmoid)
-        downscale_by -> float : 在位置编码前输入点的缩小因子
-        type_pos_enc -> str : 位置编码的类型
-        gauss_dim_pos_enc -> int : 对3D点进行高斯位置编码的维数
-        gauss_dim_pos_enc_vd -> int : 对视角方向进行高斯位置编码的维数
-        gauss_std_pos_enc -> int : 高斯位置编码的标准差
+    Params
+    ------
+    hidden_size -> int : 解码器网络的隐藏层大小
+    num_layers -> int : 网络层数
+    num_layers_view -> int : 景深(view-depth)网络层数
+    skips -> list : 网络中需要添加跳连的网络层编号，用列表装载
+    use_view_direction -> bool : 是否需要使用视角方向
+    max_freq_pos_enc -> int :  3D坐标位置编码的最大频率
+    max_freq_pos_enc_vd -> int : 视角方向位置编码的最大频率
+    input_dim -> int : 输入维数
+    z_dim -> int : 隐向量z的维数
+    out_dim_feat -> int : 模型预测 特征/RGB 的输出维数
+    use_final_actvn -> bool : 是否在 特征/RGB 输出层上应用激活函数(论文中使用sigmoid)
+    downscale_by -> float : 在位置编码前输入点的缩小因子
+    type_pos_enc -> str : 位置编码的类型
+    gauss_dim_pos_enc -> int : 对3D点进行高斯位置编码的维数
+    gauss_dim_pos_enc_vd -> int : 对视角方向进行高斯位置编码的维数
+    gauss_std_pos_enc -> int : 高斯位置编码的标准差
     '''
     def __init__(self,
                  hidden_size=128,

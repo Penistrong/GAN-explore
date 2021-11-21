@@ -19,17 +19,18 @@ class NeuralRenderer(nn.Module):
     '''
     2D神经渲染器
 
-    Params:
-        num_feat -> int : 特征数量
-        min_feat -> int : 最小特征数
-        input_dim -> int : 输入维数，如果与特征数量不同会使用1x1的卷积投影到特征数量上
-        out_dim -> int : 输出维数(神经渲染器是用来生成RGB图片的，显然这里默认输出维数是3)
-        img_size -> int : 输出图像尺寸，方形图片边长
-        use_final_actvn -> bool : 是否使用最后一层的激活函数(论文中是sigmoid)
-        use_rgb_skip -> bool : 是否使用RGB跳连,即在每一个空间分辨率上将特征图映射到RGB图片，并通过双线性上采样将前一个输出叠加到下一个输出
-        use_norm -> bool : 是否归一化
-        upsample_feat -> str : 特征上采样类型，论文中使用最近邻插值上采样(nn=Nearest Nearby)
-        upsample_rgb -> str: RGB上采样类型，论文中使用双线性插值上采样(bilinear)
+    Params
+    ------
+    num_feat -> int : 特征数量
+    min_feat -> int : 最小特征数
+    input_dim -> int : 输入维数，如果与特征数量不同会使用1x1的卷积投影到特征数量上
+    out_dim -> int : 输出维数(神经渲染器是用来生成RGB图片的，显然这里默认输出维数是3)
+    img_size -> int : 输出图像尺寸，方形图片边长
+    use_final_actvn -> bool : 是否使用最后一层的激活函数(论文中是sigmoid)
+    use_rgb_skip -> bool : 是否使用RGB跳连,即在每一个空间分辨率上将特征图映射到RGB图片，并通过双线性上采样将前一个输出叠加到下一个输出
+    use_norm -> bool : 是否归一化
+    upsample_feat -> str : 特征上采样类型，论文中使用最近邻插值上采样(nn=Nearest Nearby)
+    upsample_rgb -> str: RGB上采样类型，论文中使用双线性插值上采样(bilinear)
     '''
 
     def __init__(self,
