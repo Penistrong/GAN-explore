@@ -14,6 +14,7 @@ from . import (layers, neural_renderer)
 class GIRAFFE(nn.Module):
     '''
     GIRAFFE模型类
+
     Params:
         device -> device : torch.device
         discriminator -> nn.Module : discriminator network
@@ -64,6 +65,7 @@ class GIRAFFE(nn.Module):
     def to(self, device):
         '''
         将模型送到训练设备上
+
         Params:
             device -> device : torch.device
         '''
