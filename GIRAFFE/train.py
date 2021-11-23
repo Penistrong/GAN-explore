@@ -4,158 +4,190 @@
 @File  : train.py
 @Author: Penistrong
 @Email : chen18296276027@gmail.com
-@Date  : 2021-11-22 周一 17:21:18
+@Date  : 2021-11-23 周二 16:50:36
 @Desc  : 训练GIRAFFE模型
 '''
+import argparse
+import logging
 import os
-from collections import defaultdict
+import time
 
 import numpy as np
+import tools.config as config
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from numpy.random import multivariate_normal
-from torch import autograd
-from torch.functional import Tensor
-from torchvision.utils import make_grid, save_image
-from tqdm import tqdm
+import torch.optim as optim
+from tools.checkpoints import CheckpointIO
+from torch.utils.tensorboard import SummaryWriter
 
+logger_py = logging.getLogger(__name__)
+np.random.seed(0)
+torch.manual_seed(0)
 
-class BaseTrainer(object):
-    '''
-    基础训练器
-    '''
+# 调用train.py可以传入的参数
+parser = argparse.ArgumentParser(
+    description='Train a GIRAFFE model.'
+)
+parser.add_argument('config', type=str, help='Path to config file.')
+parser.add_argument('--no-cuda', action='store_true', help='Do not use cuda.')
+parser.add_argument('--exit-after', type=int, default=-1,
+                    help='Checkpoint and exit after specified number of '
+                         'seconds with exit code 2.')
 
-    def evaluate(self, *args, **kwargs):
-        '''
-        执行评估
-        '''
-        eval_list = defaultdict(list)
-        eval_step_dict = self.eval_step()
-        for k, v in eval_step_dict.items():
-            eval_list[k].append(v)
+args = parser.parse_args()
+cfg = config.load_config(args.config, default_path='configs/default.yaml')
+is_cuda = (torch.cuda.is_available() and not args.no_cuda)
+device = torch.device("cuda" if is_cuda else "cpu")
 
-        eval_dict = {k: np.mean(v) for k, v in eval_list.items()}
-        return eval_dict
+# Shorthands
+out_dir = cfg['training']['out_dir']
+backup_every = cfg['training']['backup_every']
+exit_after = args.exit_after
+lr = cfg['training']['learning_rate']
+lr_d = cfg['training']['learning_rate_d']
+batch_size = cfg['training']['batch_size']
+n_workers = cfg['training']['n_workers']
+t0 = time.time()
 
-    def train_step(self, *args, **kwargs):
-        '''
-        执行一次训练
-        '''
-        raise NotImplementedError
+model_selection_metric = cfg['training']['model_selection_metric']
+if cfg['training']['model_selection_mode'] == 'maximize':
+    model_selection_sign = 1
+elif cfg['training']['model_selection_mode'] == 'minimize':
+    model_selection_sign = -1
+else:
+    raise ValueError('model_selection_mode must be '
+                     'either maximize or minimize.')
 
-    def eval_step(self, *args, **kwargs):
-        '''
-        执行一次评估
-        '''
-        raise NotImplementedError
+# 输出文件夹路径
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-    def visualize(self, *args, **kwargs):
-        '''
-        执行可视化
-        '''
-        raise NotImplementedError
+train_dataset = config.get_dataset(cfg)
+train_loader = torch.utils.data.DataLoader(
+    train_dataset, batch_size=batch_size, num_workers=n_workers, shuffle=True,
+    pin_memory=True, drop_last=True,
+)
 
-    def toggle_grad(self, model : nn.Module, requires_grad):
-        '''
-        由于GIRAFFE模型由各组件组合而成，切换训练/评估时需要批次更改梯度模式
-        '''
-        for p in model.parameters():
-            p.requires_grad_(requires_grad)
+# 加载模型
+model = config.get_model(cfg, device=device, len_dataset=len(train_dataset))
 
-    def compute_grad2(self, d_out, x_in):
-        batch_size = x_in.size(0)
-        grad_dout = autograd.grad(
-            outputs=d_out.sum(), inputs=x_in,
-            create_graph=True, retain_graph=True, only_inputs=True
-        )[0]
-        grad_dout2 = grad_dout.pow(2)
-        reg = grad_dout2.reshape(batch_size, -1).sum(1)
-        return reg
+# Initialize training
+op = optim.RMSprop if cfg['training']['optimizer'] == 'RMSprop' else optim.Adam
+optimizer_kwargs = cfg['training']['optimizer_kwargs']
 
-    def update_average(self, dst_model : nn.Module, src_model : nn.Module, beta):
-        self.toggle_grad(src_model, requires_grad=False)
-        self.toggle_grad(dst_model, requires_grad=False)
+if hasattr(model, "generator") and model.generator is not None:
+    parameters_g = model.generator.parameters()
+else:
+    parameters_g = list(model.decoder.parameters())
+optimizer = op(parameters_g, lr=lr, **optimizer_kwargs)
 
-        src_params_dict = dict(src_model.named_parameters())
+if hasattr(model, "discriminator") and model.discriminator is not None:
+    parameters_d = model.discriminator.parameters()
+    optimizer_d = op(parameters_d, lr=lr_d)
+else:
+    optimizer_d = None
 
-        for p_name, p_dst in dst_model.named_parameters():
-            p_src = src_params_dict[p_name]
-            assert(p_src is not p_dst)
-            p_dst.copy_(beta * p_dst + (1. - beta) * p_src)
+trainer = config.get_trainer(model, optimizer, optimizer_d, cfg, device=device)
+checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer,
+                             optimizer_d=optimizer_d)
+try:
+    load_dict = checkpoint_io.load('model.pt')
+    print("Loaded model checkpoint.")
+except FileExistsError:
+    load_dict = dict()
+    print("No model checkpoint found.")
 
-    def compute_bce(self, d_out : Tensor, target):
-        '''
-        计算二值交叉熵损失
-        '''
-        targets = d_out.new_full(size=d_out.size(), fill_value=target)
-        loss = F.binary_cross_entropy_with_logits(d_out, targets)
+epoch_it = load_dict.get('epoch_it', -1)
+it = load_dict.get('it', -1)
+metric_val_best = load_dict.get(
+    'loss_val_best', -model_selection_sign * np.inf)
 
-        return loss
+if metric_val_best == np.inf or metric_val_best == -np.inf:
+    metric_val_best = -model_selection_sign * np.inf
 
+print('Current best validation metric (%s): %.8f'
+      % (model_selection_metric, metric_val_best))
 
-class Trainer(BaseTrainer):
-    '''
-    GIRAFFE训练器
+logger = SummaryWriter(os.path.join(out_dir, 'logs'))
+# Shorthands
+print_every = cfg['training']['print_every']
+checkpoint_every = cfg['training']['checkpoint_every']
+validate_every = cfg['training']['validate_every']
+visualize_every = cfg['training']['visualize_every']
 
-    Params
-    ------
-    model -> nn.Module : GIRAFFE模型
-    optimizer_g -> optimizer : 生成模型的优化器
-    optimizer_d -> optimizer : 判别模型的优化器
-    device -> torch.device : PyTorch设备
-    vis_dir -> str : 可视化文件夹
-    multi_gpu -> bool : 训练时是否使用多gpu
-    fid_dict -> dict : FID的GT数据字典
-    num_eval_iters -> int : 进行模型评估的迭代次数间隔
-    overwrite_visualization -> bool : 是否覆盖可视化文件
-    '''
-    def __init__(self, model, optimizer_g, optimizer_d,
-                 device=None, vis_dir=None, multi_gpu=False,
-                 fid_dict={}, num_eval_iters=10, overwrite_visualization=True,
-                **kwargs):
-        self.model = model
-        self.optimizer_g = optimizer_g
-        self.optimizer_d = optimizer_d
-        self.device = device
-        self.vis_dir = vis_dir
-        self.multi_gpu = multi_gpu
+# Print model
+nparameters = sum(p.numel() for p in model.parameters())
+logger_py.info(model)
+logger_py.info('Total number of parameters: %d' % nparameters)
 
-        self.fid_dict = fid_dict
-        self.vis_dict = model.generator.get_vis_dict(16)
-        self.num_eval_iters = num_eval_iters
+if hasattr(model, "discriminator") and model.discriminator is not None:
+    nparameters_d = sum(p.numel() for p in model.discriminator.parameters())
+    logger_py.info(
+        'Total number of discriminator parameters: %d' % nparameters_d)
+if hasattr(model, "generator") and model.generator is not None:
+    nparameters_g = sum(p.numel() for p in model.generator.parameters())
+    logger_py.info('Total number of generator parameters: %d' % nparameters_g)
 
-        self.generator = self.model.generator
-        self.discriminator = self.model.discriminator
-        self.generator_test = self.model.generator_test
+t0b = time.time()
 
-        if vis_dir is not None and not os.path.exists(vis_dir):
-            os.makedirs(vis_dir)
+while (True):
+    epoch_it += 1
 
-    def train_step(self, data, it=None):
-        loss_g = self.train_step_G(data, it)
-        loss_d, reg_d, fake_d, real_d = self.train_step_D(data, it)
+    for batch in train_loader:
 
-        return {
-            'generator': loss_g,
-            'discriminator': loss_d,
-            'regularizer': reg_d
-        }
+        it += 1
+        loss = trainer.train_step(batch, it)
+        for (k, v) in loss.items():
+            logger.add_scalar(k, v, it)
+        # Print output
+        if print_every > 0 and (it % print_every) == 0:
+            info_txt = '[Epoch %02d] it=%03d, time=%.3f' % (
+                epoch_it, it, time.time() - t0b)
+            for (k, v) in loss.items():
+                info_txt += ', %s: %.4f' % (k, v)
+            logger_py.info(info_txt)
+            t0b = time.time()
 
-    def eval_step(self):
-        gen = self.model.generator_test
-        if gen is None:
-            gen = self.model.generator
-        gen.eval()
+        # # Visualize output
+        if visualize_every > 0 and (it % visualize_every) == 0:
+            logger_py.info('Visualizing')
+            image_grid = trainer.visualize(it=it)
+            if image_grid is not None:
+                logger.add_image('images', image_grid, it)
 
-        x_fake = []
-        num_iters = self.num_eval_iters
+        # Save checkpoint
+        if (checkpoint_every > 0 and (it % checkpoint_every) == 0):
+            logger_py.info('Saving checkpoint')
+            print('Saving checkpoint')
+            checkpoint_io.save('model.pt', epoch_it=epoch_it, it=it,
+                               loss_val_best=metric_val_best)
 
-        for i in tqdm(range(num_iters)):
-            with torch.no_grad():
-                x_fake.append(gen().cpu()[:, :3])
+        # Backup if necessary
+        if (backup_every > 0 and (it % backup_every) == 0):
+            logger_py.info('Backup checkpoint')
+            checkpoint_io.save('model_%d.pt' % it, epoch_it=epoch_it, it=it,
+                               loss_val_best=metric_val_best)
 
-        x_fake = torch.cat(x_fake, dim=0)
-        x_fake.clamp_(0., 1.)
-        
-        
+        # Run validation
+        if validate_every > 0 and (it % validate_every) == 0 and (it > 0):
+            print("Performing evaluation step.")
+            eval_dict = trainer.evaluate()
+            metric_val = eval_dict[model_selection_metric]
+            logger_py.info('Validation metric (%s): %.4f'
+                           % (model_selection_metric, metric_val))
+
+            for k, v in eval_dict.items():
+                logger.add_scalar('val/%s' % k, v, it)
+
+            if model_selection_sign * (metric_val - metric_val_best) > 0:
+                metric_val_best = metric_val
+                logger_py.info('New best model (loss %.4f)' % metric_val_best)
+                checkpoint_io.backup_model_best('model_best.pt')
+                checkpoint_io.save('model_best.pt', epoch_it=epoch_it, it=it,
+                                   loss_val_best=metric_val_best)
+
+        # Exit if necessary
+        if exit_after > 0 and (time.time() - t0) >= exit_after:
+            logger_py.info('Time limit reached. Exiting.')
+            checkpoint_io.save('model.pt', epoch_it=epoch_it, it=it,
+                               loss_val_best=metric_val_best)
+            exit(3)
