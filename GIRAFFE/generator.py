@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from scipy.spatial.transform import Rotation as Rot
-from torch.autograd import backward
 
 from GIRAFFE.bounding_box_generator import BoundingBoxGenerator
 from GIRAFFE.camera import get_camera_matrix, get_camera_pose, get_random_pose
@@ -104,8 +103,33 @@ class Generator(nn.Module):
         else:
             self.neural_renderer = None
 
-    def forward(self):
-        pass
+    def forward(self,
+                batch_size=32,
+                latent_codes=None,
+                camera_matrices=None,
+                transformations=None,
+                bg_rotation=None,
+                mode='training',
+                it=0):
+        if latent_codes is None:
+            latent_codes = self.get_latent_codes(batch_size)
+        if camera_matrices is None:
+            camera_matrices = self.get_random_camera(batch_size)
+        if transformations is None:
+            transformations = self.get_random_transformations(batch_size)
+        if bg_rotation is None:
+            bg_rotation = self.get_random_bg_rotation(batch_size)
+
+        rgb_v = self.volume_render_image(latent_codes, camera_matrices, transformations,
+                                         bg_rotation, mode=mode, it=it)
+        
+        # 利用2D神经渲染器生成目标图片
+        if self.neural_renderer is not None:
+            rgb = self.neural_renderer(rgb_v)
+        else:
+            rgb = rgb_v
+
+        return rgb
 
     def get_num_boxes(self):
         return self.bounding_box_generator.num_boxes if self.bounding_box_generator is not None else 1
@@ -129,6 +153,20 @@ class Generator(nn.Module):
         z = z.to(self.device)
 
         return z
+
+    def get_vis_dict(self, batch_size=32):
+        '''
+        生成可视化过程中使用到的字典
+        '''
+        vis_dict = {
+            'batch_size': batch_size,
+            'latent_codes': self.get_latent_codes(batch_size),
+            'camera_matrices': self.get_random_camera(batch_size),
+            'transformations': self.get_random_transformations(batch_size),
+            'bg_rotation': self.get_random_bg_rotation(batch_size)
+        }
+        
+        return vis_dict
 
     def get_random_camera(self, batch_size=32):
         '''
@@ -275,13 +313,40 @@ class Generator(nn.Module):
 
         return p_box
 
-    def get_evaluation_points(self, pixels_world, camera_world, di, transformations, i):
+    def get_evaluation_points(self, pixels_world, camera_world, di, transformations, i,
+                              mode='object', bg_rotation=None):
+        '''
+        获取物体的测量点，物体分为普通物体和背景两种情况
+
+        Params
+        ------
+        pixels_world -> Tensor : 像素点在真实世界中的坐标
+        camera_world -> Tensor : 相机位置在真实世界中的坐标
+        di -> Tensor : 物体在3维空间中深度的可能值，按照每次光线投射的采样数构建的深度步进张量(range_d[0]~range_d[1])
+        transformations -> Tensor : 在该物体上应用的仿射变换
+        i -> int : 物体上待变换的该点对应的索引i
+        mode -> str : 默认为'object', 指明为'background'时，对背景进行处理
+        bg_rotation -> Tensor : 对背景应用的旋转矩阵，mode=‘background’时要给定该参数
+
+        Returns
+        -------
+        p_i -> Tensor : 采样得到的3D点坐标
+        ray_i -> Tensor : 该点对应的光线向量
+        '''
         batch_size = pixels_world.shape[0]
         num_steps = di.shape[-1]
 
-        pixels_world_i = self.transform_points_to_box(pixels_world, transformations, box_idx=i)
-        camera_world_i = self.transform_points_to_box(camera_world, transformations, box_idx=i)
-        ray_i = pixels_world_i - camera_world_i # 计算光线向量
+        assert(mode in ('object', 'background'))
+
+        if mode == 'object':
+            pixels_world_i = self.transform_points_to_box(pixels_world, transformations, box_idx=i)
+            camera_world_i = self.transform_points_to_box(camera_world, transformations, box_idx=i)
+        else:
+            pixels_world_i = (bg_rotation @ pixels_world.permute(0, 2, 1)).permute(0, 2, 1)
+            camera_world_i = (bg_rotation @ camera_world.permute(0, 2, 1)).permute(0, 2, 1)
+        
+        # 计算光线向量
+        ray_i = pixels_world_i - camera_world_i
         
         p_i = camera_world_i.unsqueeze(-2).contiguous() + \
             di.unsqueeze(-1).contiguous() * ray_i.unsqueeze(-2).contiguous()
@@ -292,12 +357,64 @@ class Generator(nn.Module):
 
         return p_i, ray_i
 
+    def composite_operator(self, sigma, feat):
+        '''
+        将(f_i, σ_i)对合成为加权特征f和体积密度σ
+
+        C(x, d)=(σ, f), σ=\sum_{i=1}^{N}σ_i; f=\\frac{1}{σ}\sum_{i=1}^{N}σ_i*f_i
+
+        Params
+        ------
+        sigma -> Tensor : 各个采样点的体积密度
+        feat -> Tensor : 各个采样点的对应特征
+
+        Returns
+        -------
+        sigma_sum -> Tensor : 累加的体积密度σ
+        feat_weighted -> Tensor : 加权特征f
+        '''
+        num_boxes = sigma.shape[0]
+        if num_boxes > 1:
+            sigma_sum = torch.sum(sigma, dim=0)
+
+            denom_sigma = torch.sum(sigma, dim=0, keepdim=True)
+            denom_sigma[denom_sigma == 0] = 1e-4
+            portion_sigma = sigma / denom_sigma
+            feat_weighted = (feat * portion_sigma.unsqueeze(-1)).sum(0)
+        else:
+            sigma_sum = sigma.squeeze(0)
+            feat_weighted = feat.squeeze(0)
+        
+        return sigma_sum, feat_weighted
+
+    def calc_volume_weights(self, di, ray_vector, sigma, last_dist=1e10):
+        '''
+        3D体积渲染中计算T_j * α_j * f_j的特征图权重分量
+
+        基于前面Composition Operator处理得到的一个给定像素点时生成的体积密度σ_j和特征场中的特征向量f_j
+        生成最终的16x16特征图
+
+        使用论文中的3.3节的公式(10): f = \sum_{j=1}^{N_s} T_j * α_j * f_j
+        其中:
+        T_j = \prod_{k=1}^{j-1}(1 - α_k)
+        α_j = 1 - exp{-σ_j*δ_j}
+        δ_j = ||x_{j+1} - x_{j}||
+        '''
+        # 计算相邻采样点间的距离δ_j，用2-范数计算||x_{j+1} - x{j}||
+        dist = di[..., 1:] - di[..., :-1]
+        dist = torch.cat([dist, torch.ones_like(di[..., :1]) * last_dist], dim=-1)
+        dist = dist * torch.norm(ray_vector, dim=-1, keepdim=True)
+        alpha = 1. - torch.exp(-F.relu(sigma) * dist)
+        weights = alpha * torch.cumprod(torch.cat([torch.ones_like(alpha[:, :, :1]),(1. - alpha + 1e-10)],
+                                                  dim=-1),
+                                        dim=-1)[..., :-1]
+
+        return weights
+
     def volume_render_image(self, latent_codes,
                             camera_matrices, transformations,
                             bg_rotation, mode='training',
-                            it=0, return_alpha_map=False,
-                            not_render_bg=False,
-                            only_render_bg=False):
+                            it=0):
         '''
         生成器的主要部分，生成体积渲染图片(分辨率默认为16x16)
 
@@ -356,12 +473,36 @@ class Generator(nn.Module):
                 sigma_i = sigma_i.reshape(batch_size, num_points, num_steps)
                 feat_i = feat_i.reshape(batch_size, num_points, num_steps, -1)
             else: # 对于背景
-                p_bg, r_bg = self.get_evaluation_points()
+                p_bg, r_bg = self.get_evaluation_points(pixels_world, camera_world, di, transformations,
+                                                        i, mode='background', bg_rotation=bg_rotation)
+                feat_i, sigma_i = self.background_generator(p_bg, r_bg, z_s_bg, z_a_bg)
 
-        # 合成 利用Composition Operator
+                sigma_i = sigma_i.reshape(batch_size, num_points, num_steps)
+                feat_i = feat_i.reshape(batch_size, num_points, num_steps, -1)
 
+                # NeRF中，训练时要给预测的体积密度σ添加噪声
+                if mode == 'training':
+                    sigma_i == torch.randn_like(sigma_i)
 
+            feat.append(feat_i)
+            sigma.append(sigma_i)
+
+        feat = torch.stack(feat, dim=0)
+        sigma = F.relu(torch.stack(sigma, dim=0))
+
+        # 合成 利用Composition Operator: sigma_sum = \sum_{i=1}^{N}\sigma_i
+        sigma_sum, feat_weighted = self.composite_operator(sigma, feat)
+
+        # 3D体积渲染 Volume Rendering
         # 获取体积权重
-
+        weights = self.calc_volume_weights(di, ray_vector, sigma_sum)
+        # 得到特征图
+        feat_map = torch.sum(weights.unsqueeze(-1) * feat_weighted, dim=-2)
 
         # 格式化输出
+        # size=B x feat x h x w
+        feat_map = feat_map.permute(0, 2, 1).reshape(batch_size, -1, res, res)
+        # 特征图的x轴与y轴互相翻转(后两维)
+        feat_map = feat_map.permute(0, 1, 3, 2)
+
+        return feat_map
