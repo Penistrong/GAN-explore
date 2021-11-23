@@ -1,1 +1,7 @@
+__pycache__/
+
+out/
+
+datasets/
+
 test.py

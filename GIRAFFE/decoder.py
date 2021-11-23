@@ -110,7 +110,7 @@ class Decoder(nn.Module):
             )
             # 处理3D点p的位置编码时，增加跳连需要的全连接层
             self.fc_p_skips = nn.ModuleList(
-                [nn.Linear(emb_dim, hidden_size) for i in range*num_skips]
+                [nn.Linear(emb_dim, hidden_size) for i in range(num_skips)]
             )
         # sigma(σ)即体积密度(Volume Density)，输出预测的体积密度
         self.out_sigma = nn.Linear(hidden_size, 1)

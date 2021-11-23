@@ -9,7 +9,34 @@
 '''
 import torch.nn as nn
 
-from . import (layers, neural_renderer)
+from GIRAFFE import (bounding_box_generator, camera, config, dataset, decoder,
+                     generator, neural_renderer, renderer)
+
+__all__ = [
+    camera, config, dataset, renderer
+]
+
+decoder_dict = {
+    'default': decoder.Decoder
+}
+
+generator_dict = {
+    'default': generator.Generator
+}
+
+# 背景生成器仍采用Decoder
+background_generator_dict = {
+    'default': decoder.Decoder
+}
+
+bounding_box_generator_dict = {
+    'default': bounding_box_generator.BoundingBoxGenerator
+}
+
+neural_renderer_dict = {
+    'default': neural_renderer.NeuralRenderer
+}
+
 
 class GIRAFFE(nn.Module):
     '''

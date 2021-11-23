@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from camera import get_rotation_matrix
+from GIRAFFE.camera import get_rotation_matrix
 from scipy.spatial.transform import Rotation as Rot
 
 

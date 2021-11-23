@@ -44,10 +44,10 @@ def load_config(path, default_path=None):
     # 存在父配置文件的情况下，当前配置文件只是对其中某些字段的更新
     update_recursively(parent_cfg, cfg)
 
-    return cfg
+    return parent_cfg
 
 
-def update_recursively(dict_src, dict_update):
+def update_recursively(dict_src : dict, dict_update : dict):
     '''
     递归更新配置文件，部分键值对中 值仍是个字典，所以递归更新
 
@@ -56,7 +56,7 @@ def update_recursively(dict_src, dict_update):
     dict_src -> dict : 需要被升级的配置文件
     dict_update -> dict : 包含升级字段的配置文件
     '''
-    for k, v in dict_update.item():
+    for k, v in dict_update.items():
         if k not in dict_src:
             dict_src[k] = dict()
         if isinstance(v, dict):
@@ -73,6 +73,7 @@ def get_model(cfg, device=None, len_dataset=0):
     ------
     cfg -> dict : 配置字典,从yaml中解析得到
     device -> device : PyTorch设备
+    len_dataset -> int : 模型使用的数据集长度
     '''
     method = cfg['method']
     model = method_dict[method].config.get_model(cfg, device=device, len_dataset=len_dataset)

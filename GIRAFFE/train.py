@@ -78,7 +78,7 @@ if hasattr(model, "generator") and model.generator is not None:
     parameters_g = model.generator.parameters()
 else:
     parameters_g = list(model.decoder.parameters())
-optimizer = op(parameters_g, lr=lr, **optimizer_kwargs)
+optimizer_g = op(parameters_g, lr=lr, **optimizer_kwargs)
 
 if hasattr(model, "discriminator") and model.discriminator is not None:
     parameters_d = model.discriminator.parameters()
@@ -86,8 +86,8 @@ if hasattr(model, "discriminator") and model.discriminator is not None:
 else:
     optimizer_d = None
 
-trainer = config.get_trainer(model, optimizer, optimizer_d, cfg, device=device)
-checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer,
+trainer = config.get_trainer(model, optimizer_g, optimizer_d, cfg, device=device)
+checkpoint_io = CheckpointIO(out_dir, model=model, optimizer=optimizer_g,
                              optimizer_d=optimizer_d)
 try:
     load_dict = checkpoint_io.load('model.pt')
