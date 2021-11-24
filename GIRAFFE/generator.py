@@ -487,8 +487,8 @@ class Generator(nn.Module):
             feat.append(feat_i)
             sigma.append(sigma_i)
 
-        feat = torch.stack(feat, dim=0)
         sigma = F.relu(torch.stack(sigma, dim=0))
+        feat = torch.stack(feat, dim=0)
 
         # 合成 利用Composition Operator: sigma_sum = \sum_{i=1}^{N}\sigma_i
         sigma_sum, feat_weighted = self.composite_operator(sigma, feat)

@@ -136,8 +136,8 @@ class Trainer(BaseTrainer):
             os.makedirs(vis_dir)
 
     def train_step(self, data, it=None):
-        loss_g = self.train_step_G(data, it)
-        loss_d, reg_d, fake_d, real_d = self.train_step_D(data, it)
+        loss_g = self.train_step_generator(data, it)
+        loss_d, reg_d, fake_d, real_d = self.train_step_discriminator(data, it)
 
         return {
             'generator': loss_g,

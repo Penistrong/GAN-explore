@@ -206,7 +206,7 @@ class Decoder(nn.Module):
             # 如果当前层编号匹配了需要跳连的层编号
             if (idx + 1) in self.skips and (idx < len(self.fc_layers) - 1):
                 decoder = decoder + self.fc_z_skips[skip_idx](z_s).unsqueeze(1)
-                decoder = decoder + self.fc_p_skips[skip_idx][p]
+                decoder = decoder + self.fc_p_skips[skip_idx](p)
                 skip_idx += 1
         
         out_sigma = self.out_sigma(decoder).squeeze(-1)

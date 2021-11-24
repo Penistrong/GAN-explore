@@ -1,7 +1,7 @@
 data:
   path: 'E:/pythonWorkSpace/PyTorch/Datasets/celeba/images/*.jpg'
   celebA_center_crop: True
-  fid_file: data/celeba/fid_files/celeba_64.npz
+  fid_file: 'E:/pythonWorkSpace/PyTorch/Datasets/celeba/fid_files/celeba_64.npz'
 model:
   bounding_box_generator_kwargs:
     scale_range_min: [0.21, 0.21, 0.21]
@@ -13,6 +13,6 @@ model:
     range_v: [0.4167, 0.5]
     fov: 10
 training:
-  out_dir: out/celeba64
+  out_dir: GIRAFFE/out/celeba64
 rendering:
   render_program: ['object_rotation', 'interpolate_app', 'interpolate_shape']

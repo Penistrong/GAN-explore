@@ -28,7 +28,7 @@ model:
     downscale_by: 12
     skips: []
 training:
-  out_dir:  out/00
+  out_dir: out/00
   batch_size: 32
   print_every: 10
   checkpoint_every: 500
