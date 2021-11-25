@@ -11,5 +11,5 @@ python -m Evalutation.calc_gt_fid <path/to/dataset> --img-size 64 --regex True -
 ### Train on the dataset
 
 ```shell
-python -m GIRAFFE.Train configs/giraffe_on_<dataset_name>.yaml
+python -m GIRAFFE.scripts.train configs/giraffe_on_<dataset_name>.yaml
 ```

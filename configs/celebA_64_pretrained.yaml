@@ -1,0 +1,5 @@
+inherit_from: configs/giraffe_on_celebA.yaml
+training:
+  out_dir:  GIRAFFE/out/celeba64_pretrained
+test:
+  model_file: '/home/penistrong/workspace/pytorch/datasets/celeba/pretrained/checkpoint_celeba64-dbe11f3e.pt'
