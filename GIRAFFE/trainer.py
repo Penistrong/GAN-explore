@@ -60,7 +60,7 @@ class BaseTrainer(object):
 
     def toggle_grad(self, model : nn.Module, requires_grad):
         '''
-        由于GIRAFFE模型由各组件组合而成，切换训练/评估时需要批次更改梯度模式
+        由于模型由不同组件组合而成，切换训练/评估时需要批次更改梯度模式
         '''
         for p in model.parameters():
             p.requires_grad_(requires_grad)

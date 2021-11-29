@@ -24,7 +24,7 @@ class CheckpointIO(object):
 
     Params
     ------
-    checkpoint_dir (str): path where checkpoints are saved
+    checkpoint_dir -> str : path where checkpoints are saved
     '''
 
     def __init__(self, checkpoint_dir='./chkpts', **kwargs):
@@ -71,7 +71,7 @@ class CheckpointIO(object):
         Loads a module dictionary from local file or url.
 
         Params:
-            filename -> str: name of saved module dictionary
+            filename -> str : name of saved module dictionary
         '''
         if is_url(filename):
             return self.load_url(filename)
@@ -83,7 +83,7 @@ class CheckpointIO(object):
         Loads a module dictionary from file.
 
         Params:
-            filename -> str: name of saved module dictionary
+            filename -> str : name of saved module dictionary
         '''
 
         if not os.path.isabs(filename):
@@ -103,7 +103,7 @@ class CheckpointIO(object):
         Load a module dictionary from url.
 
         Params:
-            url (str): url to saved model
+            url -> str : url to saved model
         '''
         print(url)
         print('=> Loading checkpoint from url...')
@@ -116,7 +116,7 @@ class CheckpointIO(object):
         Parse state_dict of model and return scalars.
 
         Params:
-            state_dict (dict): State dict of model
+            state_dict -> dict : State dict of model
         '''
 
         for k, v in self.module_dict.items():
@@ -134,7 +134,7 @@ def is_url(url):
     Checks if input string is a URL.
     
     Params:
-        url (string): URL
+        url -> str : URL
     '''
     scheme = urllib.parse.urlparse(url).scheme
     return scheme in ('http', 'https')
