@@ -94,6 +94,9 @@ class Renderer(object):
             if rp == 'render_add_cars':
                 self.set_random_seed()
                 self.render_add_objects_cars5(img_out_path)
+            if rp == 'object_slide_and_rotate':
+                self.set_random_seed()
+                self.render_object_slide_and_rotate(img_out_path)
 
     def render_object_rotation(self, img_out_path, batch_size=15, n_steps=32):
         gen = self.generator
@@ -459,6 +462,50 @@ class Renderer(object):
         makedirs(out_folder, exist_ok=True)
         self.save_video_and_images(outs, out_folder, name='add_cars',
                                    is_full_rotation=False, add_reverse=True)
+
+
+    def render_object_slide_and_rotate(self, img_out_path, batch_size=15,
+            n_steps=32):
+        gen = self.generator
+
+        # Get values
+        latent_codes = gen.get_latent_codes(batch_size, tmp=self.sample_tmp)
+        bg_rotation = gen.get_random_bg_rotation(batch_size)
+        camera_matrices = gen.get_camera(batch_size=batch_size)
+        n_boxes = gen.bounding_box_generator.n_boxes
+        s = [[0., 0., 0.]
+             for i in range(n_boxes)]
+        n_steps = int(n_steps * 2)
+        r_scale = [0., 1.]
+
+        if n_boxes == 1:
+            t = []
+            x_val = 0.5
+        elif n_boxes == 2:
+            t = [[0.5, 0.5, 0.]]
+            x_val = 1.0
+
+        out = []
+        for step in range(n_steps):
+            # translation
+            i = step * 1.0 / (n_steps - 1)
+            ti = t + [[0.1, i, 0.]]
+            # rotation
+            r = [step * 1.0 / (n_steps - 1) for i in range(n_boxes)]
+            r = [r_scale[0] + ri * (r_scale[1] - r_scale[0]) for ri in r]
+
+            transformations = gen.get_transformations(s, ti, r, batch_size)
+            with torch.no_grad():
+                out_i = gen(batch_size, latent_codes, camera_matrices,
+                            transformations, bg_rotation, mode='val')
+            out.append(out_i.cpu())
+        out = torch.stack(out)
+
+        out_folder = join(img_out_path, 'object_slide_and_rotate')
+        makedirs(out_folder, exist_ok=True)
+        self.save_video_and_images(
+            out, out_folder, name='object_slide_and_rotate',
+            add_reverse=True)
 
 
     ##################

@@ -41,7 +41,7 @@ class Generator(nn.Module):
     Parts of Generator
     -----------------
     decoder -> nn.Module : Decoder解码器
-    background_generator -> nn.Module : 背景生成器
+    background_generator -> nn.Module : 背景生成器，在GIRAFFE架构上采用跟对象解码器decoder一致的网络
     bounding_box_generator -> nn.Module : 碰撞箱生成器
     neural_renderer -> nn.Module : 2D神经渲染器
     """
