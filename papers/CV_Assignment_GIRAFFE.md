@@ -1,3 +1,18 @@
+---
+layout:     post
+title:      "[CVPR2021 Best Paper]GIRAFFE: Representing Scenes as Compositional Generative Neural Feature Fields"
+subtitle:   "中文译文"
+author:     Penistrong
+date:       2021-12-05 13:30:13 +0800
+categories: jekyll update
+catalog:    true
+mathjax:    false
+katex:      true
+tags:
+    - GAN
+    - CVPR
+---
+
 # GIRAFFE: Representing Scenes as Compositional Generative Neural Feature Fields
 
 ## 摘要 Abstract
@@ -8,37 +23,40 @@
 
 生成和处理逼真图像内容一直是计算机视觉和图形学的一个长远目标。现代计算机图形技术取得了令人惊叹的成果，成为了游戏和电影制作的行业标准。然而，这种技术基于昂贵的硬件设备而且需要大量的人力投入进3D内容创作和布局上。
 
-近年来，计算机视觉社区在高仿真图像生成方面取得了长足进步。尤其是生成对抗网络(GAN)成为了一类强大的生成模型。基于[6,14,15,39,40]这些论文，它们能够在高达 $1024^2$ 的分辨率上合成写实图片。
+近年来，计算机视觉社区在高仿真图像生成方面取得了长足进步。尤其是生成对抗网络(GAN)成为了一类强大的生成模型。基于[^6][^14][^15][^39][^40]这些论文，它们能够在高达 $1024^2$ 的分辨率上合成写实图片。
 
-尽管取得了这些成功，逼真2维图像合成却并不是生成模型应用所需的唯一方面。图像生成过程也应该以一种简洁一致的方式可控。为此，许多工作[^9, 25, 39, 43, 44, 48, 54, 71, 74, 97, 98] 研究了如何从没有明确监督的数据集中学习解耦表示。解耦的定义不尽相同[^5, 53]，但一般是指能够在不改变其他属性的情况下控制一种感兴趣的属性比如物体形状、大小或者姿态。然而大多数方法都没有考虑到场景的合成性质且仅在2维空间中进行操作，忽略了我们的三维世界。这通常会导致耦合表示且控制机制不是内置的而是需要在其潜在空间中寻找它的后验。然后，这些特性对于模型的成功应用至关重要，比如需要以一致方式生成复杂对象轨迹的电影制作。
+尽管取得了这些成功，逼真2维图像合成却并不是生成模型应用所需的唯一方面。图像生成过程也应该以一种简洁一致的方式可控。为此，许多工作[^9][^25][^39][^43][^44][^48][^54][^71][^74][^97][^98] 研究了如何从没有明确监督的数据集中学习解耦表示。解耦的定义不尽相同[^5][^53]，但一般是指能够在不改变其他属性的情况下控制一种感兴趣的属性比如物体形状、大小或者姿态。然而大多数方法都没有考虑到场景的合成性质且仅在2维空间中进行操作，忽略了我们的三维世界。这通常会导致耦合表示且控制机制不是内置的而是需要在其潜在空间中寻找它的后验。然后，这些特性对于模型的成功应用至关重要，比如需要以一致方式生成复杂对象轨迹的电影制作。
 
-因此，最近的几项工作研究了如何将3D表达(比如体素[^32, 63, 64]、基元[^46]、辐射场[^77])直接并入到生成模型中。虽然这些方法通过内置控制取得了令人惊叹的成果，但他们大多仅限于单对象场景，对于更高分辨率、更复杂逼真的图像而言其合成结果不太具有一致性(比如物体不在中心或者背景杂乱的场景)。
+因此，最近的几项工作研究了如何将3D表达(比如体素[^32][^63][^64]、基元[^46]、辐射场[^77])直接并入到生成模型中。虽然这些方法通过内置控制取得了令人惊叹的成果，但他们大多仅限于单对象场景，对于更高分辨率、更复杂逼真的图像而言其合成结果不太具有一致性(比如物体不在中心或者背景杂乱的场景)。
 
-**我们的贡献**: 在这篇论文中，我们要介绍GIRAFFE，它是一种从原始的非结构化图像数据集中以可控且仿真的方式生成场景的新方法。我们的关键insight由两部分组成：首先，将合成3D场景表示直接并入到生成模型中以实现更可控的图像合成。其次，将这种显式3D表示同神经渲染管线相结合以加速推理及更加逼真的图像合成。为此，我们将场景表达为组合生成式神经特征场。我们将场景体绘制为分辨率相对较低的特征图像以节省时间和计算量。神经渲染器会处理这些特征图像并输出最终的渲染结果。这样，我们的方法实现了高质量的图片生成并扩展到现实世界的场景中。我们发现，基于原始非结构化的图像数据集进行训练后，我们提出的方法同时满足了单对象和多对象场景的可控图片合成。
+**我们的贡献**: 在这篇论文中，我们要介绍GIRAFFE，它是一种从原始的非结构化图像数据集中以可控且仿真的方式生成场景的新方法。我们的关键insight由两部分组成：首先，将合成3D场景表示直接并入到生成模型中以实现更可控的图像合成。其次，将这种显式3D表示同神经渲染管线相结合以加速推理及更加逼真的图像合成。为此，我们将场景表达为组合生成式神经特征场，如图1所示。我们将场景体绘制为分辨率相对较低的特征图像以节省时间和计算量。神经渲染器会处理这些特征图像并输出最终的渲染结果。这样，我们的方法实现了高质量的图片生成并扩展到现实世界的场景中。我们发现，基于原始非结构化的图像数据集进行训练后，我们提出的方法同时满足了单对象和多对象场景的可控图片合成。
+
+![图1:Overview](https://s2.loli.net/2021/12/05/rSuby2pEBdiMfx5.png)
 
 ## 2. 相关工作 Related Work
 
-**基于GAN的图像合成**: 生成对抗网络(GAN)[^24]已被一系列研究工作[^6, 14, 15, 39, 40]证明，其允许以高达$1024^2$的分辨率进行仿真图像合成。为了更好地控制合成过程，有许多工作研究了如何在没有显式监督的情况下解耦变化因素。它们要么修改训练目标[9, 40, 71]或网络架构[^39]，要么研究了工程化的预训练生成模型的潜在空间[1, 16, 23, 27, 34, 78, 96]。然而，所有的这些工作都没有明确地建模场景的组合性质。因此，最近的工作研究了如何在对象级别上控制合成过程[3, 4, 7, 18, 19, 26, 45, 86, 90]。在取得了逼真合成结果的同时，上述提到的工作都以2D形式建模图像的形成过程而忽略了真实世界的3维结构。在这项工作中，我们提倡直接在3D空间对形成过程进行建模以获得更好的解耦表示和更可控的图像合成。
+**基于GAN的图像合成**: 生成对抗网络(GAN)[^24]已被一系列研究工作[^6][^14][^15][^39][^40]证明，其允许以高达$1024^2$的分辨率进行仿真图像合成。为了更好地控制合成过程，有许多工作研究了如何在没有显式监督的情况下解耦变化因素。它们要么修改训练目标[^9][^40][^71]或网络架构[^39]，要么研究了工程化的预训练生成模型的潜在空间[^1][^16][^23][^27][^34][^78][^96]。然而，所有的这些工作都没有明确地建模场景的组合性质。因此，最近的工作研究了如何在对象级别上控制合成过程[^3][^4][^7][^18][^19][^26][^45][^86][^90]。在取得了逼真合成结果的同时，上述提到的工作都以2D形式建模图像的形成过程而忽略了真实世界的3维结构。在这项工作中，我们提倡直接在3D空间对形成过程进行建模以获得更好的解耦表示和更可控的图像合成。
 
-**隐式函数**: 使用隐函数进行3D几何表示在基于学习的3维重建领域中越来越受欢迎[11, 12, 22, 59, 60, 65, 67, 69, 76]，并且它们已被扩展到了场景级重建[8, 13, 35, 72, 79]。为了克服3D监督的需求，一些工作[50, 51, 66, 81, 9]提出了可微分渲染技术。Mildenhall等人[^61]提出了神经辐射场(NeRFs)，他们将隐式神经模型与体绘制相结合以产生新的适用于复杂场景的视图合成技术。考虑到它们的极佳表达能力，我们将NeRFs的一种生成式变体作为我们的对象级表示技术。与我们的方法相比，前面所讨论过的工作需要以相机姿态作为监督的多视角图像，每个场景训练一个单一网络并且无法生成新的场景。
+**隐式函数**: 使用隐函数进行3D几何表示在基于学习的3维重建领域中越来越受欢迎[^11][^12][^22][^59][^60][^65][^67][^69][^76]，并且它们已被扩展到了场景级重建[^8][^13][^35][^72][^79]。为了克服3D监督的需求，一些工作[^50][^51][^66][^81][^9]提出了可微分渲染技术。Mildenhall等人[^61]提出了神经辐射场(NeRFs)，他们将隐式神经模型与体绘制相结合以产生新的适用于复杂场景的视图合成技术。考虑到它们的极佳表达能力，我们将NeRFs的一种生成式变体作为我们的对象级表示技术。与我们的方法相比，前面所讨论过的工作需要以相机姿态作为监督的多视角图像，每个场景训练一个单一网络并且无法生成新的场景。
 
-**3D感知图像合成**: 一些工作研究了如何将3D表示作为归纳偏置纳入生成模型中[21, 29-32, 46, 55, 63, 64, 75, 77]。虽然有许多其他方法使用了额外监督[2, 10, 87, 88, 99]，但我们专注于像我们提出的方法一样在原始图像数据集上进行训练的研究工作。Henzler等人[^32]使用可微分渲染技术学习基于体素的表示。其结果是3D可控的，但是由于立方内存增长所导致的有限体素分辨率使这些结果仍然呈现出了人工痕迹。Nguyen-Phuoc等人[^63, 64]提出体素化特征网格表示，可以通过一种重塑操作渲染为2D结果。在取得了惊人成果的同时，训练却变得不太稳定，并且对于更高分辨率的合成结果也不太一致。Liao等人[^46]使用了结合基元和可微分渲染的抽象特征。在处理多对象场景时，它们需要难以在真实世界中获得的纯背景图像作为额外的监督形式。Schwarz等人[^77]提出了生成式神经辐射场(GRAF)。虽然它能够在高分辨率下实现可控图像合成，但这种表示方法仅限于单对象场景，在更加复杂的真实世界图像上其效果会变差。相比之下，我们将合成3D场景结构并入到生成模型中，使其能够自然地处理多对象场景。此外，通过集成神经渲染管线技术[^20, 41, 42, 49, 62, 80, 81, 83, 84]，我们的模型可以扩展到更加复杂的真实世界数据上。
+**3D感知图像合成**: 一些工作研究了如何将3D表示作为归纳偏置纳入生成模型中[^21][^29][^30][^31][^32][^46][^55][^63][^64][^75][^77]。虽然有许多其他方法使用了额外监督[^2][^10][^87][^88][^99]，但我们专注于像我们提出的方法一样在原始图像数据集上进行训练的研究工作。Henzler等人[^32]使用可微分渲染技术学习基于体素的表示。其结果是3D可控的，但是由于立方内存增长所导致的有限体素分辨率使这些结果仍然呈现出了人工痕迹。Nguyen-Phuoc等人[^63][^64]提出体素化特征网格表示，可以通过一种重塑操作渲染为2D结果。在取得了惊人成果的同时，训练却变得不太稳定，并且对于更高分辨率的合成结果也不太一致。Liao等人[^46]使用了结合基元和可微分渲染的抽象特征。在处理多对象场景时，它们需要难以在真实世界中获得的纯背景图像作为额外的监督形式。Schwarz等人[^77]提出了生成式神经辐射场(GRAF)。虽然它能够在高分辨率下实现可控图像合成，但这种表示方法仅限于单对象场景，在更加复杂的真实世界图像上其效果会变差。相比之下，我们将合成3D场景结构并入到生成模型中，使其能够自然地处理多对象场景。此外，通过集成神经渲染管线技术[^20][^41][^42][^49][^62][^80][^81][^83][^84]，我们的模型可以扩展到更加复杂的真实世界数据上。
 
 ## 3. 方法 Method
 
 我们的目标是一种可以在没有添加额外监督的原始图像集上进行训练的可控图像合成管线。下面，我们将讨论我们提出的方法的主要组成部分。首先，我们将独立对象建模为神经特征场([3.1节](#3.1-使用神经特征场表示对象))。接着，我们利用特征场的可加性使用多个独立对象去合成新场景([3.2节](#3.2-场景合成))。对于渲染，我们探索了体绘制与神经渲染技术的有效组合方法([3.3节](#3.3-场景渲染))。最后，我们讨论了如何在原始图像集上训练我们的模型([3.4节](#3.4-训练))。图3展示了我们所提出方法的全貌。
 
+![图3:GIRAFFE](https://s2.loli.net/2021/12/05/z5vGRKPeELBxWJy.png)
+
 ### 3.1 使用神经特征场表示对象
 
-**神经辐射场**: 辐射场是一个将3D点 $\mathbf{x} \in \mathbb{R}^3$ 和视角方向 $\mathbf{d} \in \mathbb{S}^2$ 映射到体积密度$\sigma \in \mathbb{R}^{+}$和RGB颜色值 $\mathbf{c} \in \mathbb{R}^3$ 的连续函数 $f$ 。其他两篇论文[^61, 82]观察到，当 $f$ 用神经网络参数化时，低维输入 $\mathbf{x}$ 和 $\mathbf{d}$ 需要被映射到高维特征才能够表示复杂信号。更具体地说，需要使用一个预定义的位置编码逐元素地应用到 $\mathbf{x}$ 和 $\mathbf{d}$ 的每个分量上:
-
+**神经辐射场**: 辐射场是一个将3D点 $\mathbf{x} \in \mathbb{R}^3$ 和视角方向 $\mathbf{d} \in \mathbb{S}^2$ 映射到体积密度$\sigma \in \mathbb{R}^{+}$和RGB颜色值 $\mathbf{c} \in \mathbb{R}^3$ 的连续函数 $f$ 。其他两篇论文[^61][^82]观察到，当 $f$ 用神经网络参数化时，低维输入 $\mathbf{x}$ 和 $\mathbf{d}$ 需要被映射到高维特征才能够表示复杂信号。更具体地说，需要使用一个预定义的位置编码逐元素地应用到 $\mathbf{x}$ 和 $\mathbf{d}$ 的每个分量上:
 $$
 \gamma(t, L) = \left( \sin(2^{0}t\pi), \cos(2^{0}t\pi), \dots, \sin(2^{L}t\pi), \cos(2^{L}t\pi) \right) \tag{1}
 $$
 
 其中 $t$ 是标量输入，比如 $\mathbf{x}$ 或 $\mathbf{d}$ 的某个分量，而 $L$ 是频率倍频程的值。在生成模型的上下文中，我们观察到这种表示方法的额外优势：它引入了归纳偏置来学习规范方向上的3D形状表示，否则其表示的方向一般是任意的。
 
-遵循隐式形状表示方法[^12, 59, 69]，Mildenhall等人[^6]建议通过使用多层感知机(MLP)参数化 $f$ 来学习神经辐射场(NeRFs):
+遵循隐式形状表示方法[^12][^59][^69]，Mildenhall等人[^61]建议通过使用多层感知机(MLP)参数化 $f$ 来学习神经辐射场(NeRFs):
 
 $$
 \begin{aligned}
@@ -119,7 +137,7 @@ $$
 
 ### 3.3 场景渲染
 
-**3D体绘制**: 前人的研究工作[^47, 57, 61, 77]利用体绘制输出了一个RGB值，我们将此公式扩展以渲染一个 $M_f$-维特征向量 $\mathbf{f}$。
+**3D体绘制**: 前人的研究工作[^47][^57][^61][^77]利用体绘制输出了一个RGB值，我们将此公式扩展以渲染一个 $M_f$-维特征向量 $\mathbf{f}$。
 
 对于给定的相机外部参数 $\xi$ ，令 $\{\mathbf{x}_j\}_{j=1}^{N_s}$ 为给定像素点沿相机射出光线 $\mathbf{d}$ 的各个不同采样点($N_s$为采样点个数)，并且令 $(\sigma_j, \mathbf{f}_j) = C(\mathbf{x}_j, \mathbf{d})$ 为采样点 $\mathbf{x}_j$ 的特征场对应的体积密度和特征向量。体绘制算子 $\pi_{\textrm{vol}}$ 将这些采样点的评估映射到该像素点的最终特征向量 $\mathbf{f}$:
 
@@ -141,13 +159,24 @@ $$
 
 其中 $\tau_j$ 是透射率，$\alpha_j$ 是 $\mathbf{x}_j$ 的alpha值，$\delta_j = ||\mathbf{x}_{j+1} - \mathbf{x}_j ||_2$ 是相邻样本点之间的距离。于每个像素点上计算 $\pi_{\textrm{vol}}$ 即可得到整个特征图像。为了提高效率，我们以 $16^2$ 的分辨率渲染特征图像，该分辨率低于 $64^2$ 或 $256^2$ 像素点的输出分辨率。接着，我们使用2D神经渲染将低分辨率特征图像上采样为更高分辨率的RGB图像。
 
+![图4:NeuralRenderer](https://s2.loli.net/2021/12/05/TisONPYgWfFH4yE.png)
+
 **2D神经渲染**: 神经渲染算子
 
 $$
 \pi_{\theta}^{\textrm{neural}} : \mathbb{R}^{H_V \times W_V \times M_f} \to \mathbb{R}^{H \times W \times 3} \tag{11}
 $$
 
-使用权重 $\theta$ 将特征图像 $\mathbf{I}_V \in \mathbb{R}^{H_V \times W_V \times M_f}$ 映射为最终的合成图像 $\hat{\mathbf{I}} \in \mathbb{R}^{H \times W \times 3}$。我们将 $\pi_{\theta}^{\textrm{neural}}$ 参数化为使用Leaky ReLU[^56, 89]作为激活函数的2维卷积神经网络(CNN)，并将最近邻上采样与 $3 \times 3$ 卷积相结合以提高空间分辨率。我们选择较小的kernel尺寸且不使用中间层，即仅允许在空间上进行较小的细化以避免在图像合成过程中全局场景属性的耦合问题，同时也可以增加输出分辨率。受StyleGAN改进方法[^40]的启发，我们在每一个空间分辨率上将特征图像映射为一张RGB图片，并通过双线性上采样将前一个空间分辨率上的输出添加到下一个上。这种跳连方式确保了一个流向特征场的强梯度流。通过在最后一个RGB层上应用sigmoid激活函数便可获得我们最终的图像预测 $\hat{\mathbf{I}}$。我们在消融研究中验证了这种设计选择，如表4所示。
+使用权重 $\theta$ 将特征图像 $\mathbf{I}_V \in \mathbb{R}^{H_V \times W_V \times M_f}$ 映射为最终的合成图像 $\hat{\mathbf{I}} \in \mathbb{R}^{H \times W \times 3}$。我们将 $\pi_{\theta}^{\textrm{neural}}$ 参数化为使用Leaky ReLU[^56][^89]作为激活函数的2维卷积神经网络(CNN)，并将最近邻上采样与 $3 \times 3$ 卷积相结合以提高空间分辨率，如图4所示。我们选择较小的kernel尺寸且不使用中间层，即仅允许在空间上进行较小的细化以避免在图像合成过程中全局场景属性的耦合问题，同时也可以增加输出分辨率。受StyleGAN改进方法[^40]的启发，我们在每一个空间分辨率上将特征图像映射为一张RGB图片，并通过双线性上采样将前一个空间分辨率上的输出添加到下一个上。这种跳连方式确保了一个流向特征场的强梯度流。通过在最后一个RGB层上应用sigmoid激活函数便可获得我们最终的图像预测 $\hat{\mathbf{I}}$。我们在消融研究中验证了这种设计选择，如表4所示。
+
+
+$$
+\begin{array}{c|cccc}
+    \hline
+    Full & -Skip & -Act. & +NN.RGB UP. & +Bi.Feat. UP. \\ \hline
+    \textbf{16.16} & 16.66 & 21.61 & 17.28 & 20.68 \\ \hline
+\end{array}
+$$
 
 ### 3.4 训练
 
@@ -185,27 +214,102 @@ $$
 
 ## 参考文献
 
+[^1]:Rameen Abdal, Peihao Zhu, Niloy J. Mitra, and Peter Wonka. Styleflow: Attribute-conditioned exploration of stylegan-generated images using conditional continuous normalizing flows. arXiv.org, 2008.02401, 2020.
+[^2]:Hassan Alhaija, Siva Mustikovela, Andreas Geiger, and Carsten Rother. Geometric image synthesis. In ACCV, 2018.
+[^3]:Titas Anciukevicius, Christoph H. Lampert, and Paul Henderson. Object-centric image generation with factored depths, locations, and appearances. arXiv.org, 2004.00642, 2020.
+[^4]:Relja Arandjelovic and Andrew Zisserman. Object discovery with a copy-pasting GAN. arXiv.org, 1905.11369, 2019.
+[^5]:Yoshua Bengio, Aaron C. Courville, and Pascal Vincent. Representation learning: A review and new perspectives. IEEE Trans. on Pattern Analysis and Machine Intelligence (PAMI), 35(8):1798–1828, 2013.
+[^6]:Andrew Brock, Jeff Donahue, and Karen Simonyan. Large scale GAN training for high fidelity natural image synthesis. In ICLR, 2019.
+[^7]:Christopher P. Burgess, Lo¨ıc Matthey, Nicholas Watters, Rishabh Kabra, Irina Higgins, Matthew M Botvinick, and Alexander Lerchner. Monet: Unsupervised scene decomposition and representation. arXiv.org, 1901.11390, 2019.
+[^8]:Rohan Chabra, Jan Eric Lenssen, Eddy Ilg, Tanner Schmidt, Julian Straub, Steven Lovegrove, and Richard A. Newcombe. Deep local shapes: Learning local SDF priors for detailed 3d reconstruction. In ECCV, 2020.
+[^9]:Xi Chen, Xi Chen, Yan Duan, Rein Houthooft, John Schulman, Ilya Sutskever, and Pieter Abbeel. Infogan: Interpretable representation learning by information maximizing generative adversarial nets. In NeurIPS, 2016.
+[^10]:Xuelin Chen, Daniel Cohen-Or, Baoquan Chen, and Niloy J. Mitra. Neural graphics pipeline for controllable image generation. arXiv.org, 2006.10569, 2020.
+[^11]:Zhiqin Chen, Kangxue Yin, Matthew Fisher, Siddhartha Chaudhuri, and Hao Zhang. BAE-NET: branched autoencoder for shape co-segmentation. In ICCV, 2019.
+[^12]:Zhiqin Chen and Hao Zhang. Learning implicit fields for generative shape modeling. In CVPR, 2019.
+[^13]:Julian Chibane, Aymen Mir, and Gerard Pons-Moll. Neural unsigned distance fields for implicit function learning. In NeurIPS, 2020.
+[^14]:Yunjey Choi, Min-Je Choi, Munyoung Kim, Jung-Woo Ha, Sunghun Kim, and Jaegul Choo. Stargan: Unified generative adversarial networks for multi-domain image-to-image translation. In CVPR, 2018.
+[^15]:Yunjey Choi, Youngjung Uh, Jaejun Yoo, and Jung-Woo Ha. Stargan v2: Diverse image synthesis for multiple domains. In CVPR, 2020.
+[^16]:Edo Collins, Raja Bala, Bob Price, and Sabine S¨usstrunk. Editing in style: Uncovering the local semantics of gans. In CVPR, 2020.
+[^17]:Robert A. Drebin, Loren C. Carpenter, and Pat Hanrahan. Volume rendering. In ACM Trans. on Graphics, 1988.
+[^18]:S´ebastien Ehrhardt, Oliver Groth, Aron Monszpart, Martin Engelcke, Ingmar Posner, Niloy J. Mitra, and Andrea Vedaldi. RELATE: physically plausible multi-object scene synthesis using structured latent spaces. arXiv.org, 2007.01272, 2020.
+[^19]:Martin Engelcke, Adam R. Kosiorek, Oiwi Parker Jones, and Ingmar Posner. GENESIS: generative scene inference and sampling with object-centric latent representations. In ICLR, 2020.
 [^20]:S. M. Ali Eslami, Danilo Jimenez Rezende, Frederic Besse, Fabio Viola, Ari S. Morcos, Marta Garnelo, Avraham Ruderman, Andrei A. Rusu, Ivo Danihelka, Karol Gregor, David P. Reichert, Lars Buesing, Theophane Weber, Oriol Vinyals, Dan Rosenbaum, Neil C. Rabinowitz, Helen King, Chloe Hillier, Matt M. Botvinick, Daan Wierstra, Koray Kavukcuoglu, and Demis Hassabis. Neural scene representation and rendering. Science, 360:1204–1210, 2018.
-[^24]:Ian J. Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron C. Courville, and Yoshua Bengio. Generative adversarial nets. In Advances in Neural Information Processing Systems (NIPS), 2014.
-[^32]:Philipp Henzler, Niloy J Mitra, and Tobias Ritschel. Escaping plato’s cave: 3d shape from adversarial rendering. In Proc. of the IEEE International Conf. on Computer Vision (ICCV), 2019.
-[^39]:Tero Karras, Samuli Laine, and Timo Aila. A style-based generator architecture for generative adversarial networks. In Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR), 2019.
-[^40]:Tero Karras, Samuli Laine, Miika Aittala, Janne Hellsten, Jaakko Lehtinen, and Timo Aila. Analyzing and improving the image quality of StyleGAN. In Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR), 2020.
+[^21]:Matheus Gadelha, Subhransu Maji, and Rui Wang. 3d shape induction from 2d views of multiple objects. In Proc. of the International Conf. on 3D Vision (3DV), 2017.
+[^22]:Kyle Genova, Forrester Cole, Daniel Vlasic, Aaron Sarna, William T Freeman, and Thomas Funkhouser. Learning shape templates with structured implicit functions. In ICCV, 2019.
+[^23]:Lore Goetschalckx, Alex Andonian, Aude Oliva, and Phillip Isola. Ganalyze: Toward visual definitions of cognitive image properties. In ICCV, 2019.
+[^24]:Ian J. Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron C. Courville, and Yoshua Bengio. Generative adversarial nets. In NeurIPS, 2014.
+[^25]:Anirudh Goyal, Alex Lamb, Jordan Hoffmann, Shagun Sodhani, Sergey Levine, Yoshua Bengio, and Bernhard Sch¨olkopf. Recurrent independent mechanisms. arXiv.org, 1909.10893, 2019.
+[^26]:Klaus Greff, Rapha¨el Lopez Kaufmann, Rishabh Kabra, Nick Watters, Christopher Burgess, Daniel Zoran, Loic Matthey, Matthew Botvinick, and Alexander Lerchner. Multi-object representation learning with iterative variational inference. In ICML, 2019.
+[^27]:Erik H¨ark¨onen, Aaron Hertzmann, Jaakko Lehtinen, and Sylvain Paris. Ganspace: Discovering interpretable GAN  controls. arXiv.org, 2004.02546, 2020.
+[^28]:Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition. In CVPR, 2016.
+[^29]:Paul Henderson and Vittorio Ferrari. Learning single-image 3d reconstruction by generative modelling of shape, pose and shading. International Journal of Computer Vision (IJCV), 2019.
+[^30]:Paul Henderson and Christoph H. Lampert. Unsupervised object-centric video generation and decomposition in 3d. arXiv.org, 2007.06705, 2020.
+[^31]:Paul Henderson, Vagia Tsiminaki, and Christoph H. Lampert. Leveraging 2d data to learn textured 3d mesh generation. In CVPR, 2020.
+[^32]:Philipp Henzler, Niloy J Mitra, and Tobias Ritschel. Escaping plato’s cave: 3d shape from adversarial rendering. In ICCV, 2019.
+[^33]:Martin Heusel, Hubert Ramsauer, Thomas Unterthiner, Bernhard Nessler, and Sepp Hochreiter. Gans trained by a two time-scale update rule converge to a local nash equilibrium. In NeurIPS, 2017.
+[^34]:Ali Jahanian, Lucy Chai, and Phillip Isola. On the ”steerability” of generative adversarial networks. In ICLR, 2020.
+[^35]:Chiyu Max Jiang, Avneesh Sud, Ameesh Makadia, Jingwei Huang, Matthias Nießner, and Thomas A. Funkhouser. Local implicit grid representations for 3d scenes. In CVPR, 2020.
+[^36]:Justin Johnson, Bharath Hariharan, Laurens van der Maaten, Li Fei-Fei, C Lawrence Zitnick, and Ross Girshick. Clevr: A diagnostic dataset for compositional language and elementary visual reasoning. In CVPR, 2017.
+[^37]:James T. Kajiya and Brian Von Herzen. Ray tracing volume densities. In ACM Trans. on Graphics, 1984.
+[^38]:Tero Karras, Timo Aila, Samuli Laine, and Jaakko Lehtinen. Progressive growing of GANs for improved quality, stability, and variation. In ICLR, 2018.
+[^39]:Tero Karras, Samuli Laine, and Timo Aila. A style-based generator architecture for generative adversarial networks. In CVPR, 2019.
+[^40]:Tero Karras, Samuli Laine, Miika Aittala, Janne Hellsten, Jaakko Lehtinen, and Timo Aila. Analyzing and improving the image quality of StyleGAN. In CVPR, 2020.
 [^41]:Hiroharu Kato, Deniz Beker, Mihai Morariu, Takahiro Ando, Toru Matsuoka, Wadim Kehl, and Adrien Gaidon. Differentiable rendering: A survey. arXiv.org, 2006.12057, 2020.
-[^42]:Hiroharu Kato, Yoshitaka Ushiku, and Tatsuya Harada. Neural 3d mesh renderer. In Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR), 2018.
-[^46]:Yiyi Liao, Katja Schwarz, Lars Mescheder, and Andreas Geiger. Towards unsupervised learning of generative models for 3d controllable image synthesis. In Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR), 2020.
-[^49]:Shichen Liu, Weikai Chen, Tianye Li, and Hao Li. Soft rasterizer: Differentiable rendering for unsupervised singleview mesh reconstruction. In Proc. of the IEEE International Conf. on Computer Vision (ICCV), 2019.
-[^56]:Andrew L. Maas, Awni Y. Hannun, and Andrew Y. Ng. Rectifier nonlinearities improve neural network acoustic models. In Proc. of the International Conf. on Machine learning (ICML) Workshops, 2013.
-[^58]:Lars Mescheder, Andreas Geiger, and Sebastian Nowozin. Which training methods for gans do actually converge? In Proc. of the International Conf. on Machine learning (ICML), 2018.
-[^61]:Ben Mildenhall, Pratul P Srinivasan, Matthew Tancik, Jonathan T Barron, Ravi Ramamoorthi, and Ren Ng. NeRF: Representing scenes as neural radiance fields for view synthesis. In Proc. of the European Conf. on Computer Vision (ECCV), 2020.
-[^62]:Thu Nguyen-Phuoc, Chuan Li, Stephen Balaban, and YongLiang Yang. Rendernet: A deep convolutional network for differentiable rendering from 3d shapes. In Advances in Neural Information Processing Systems (NIPS), 2018.
-[^63]:Thu Nguyen-Phuoc, Chuan Li, Lucas Theis, Christian Richardt, and Yong-Liang Yang. Hologan: Unsupervised learning of 3d representations from natural images. In Proc. of the IEEE International Conf. on Computer Vision (ICCV), 2019.
-[^64]:Thu Nguyen-Phuoc, Christian Richardt, Long Mai, YongLiang Yang, and Niloy Mitra. Blockgan: Learning 3d objectaware scene representations from unlabelled images. In Advances in Neural Information Processing Systems (NeurIPS), 2020.
-[^73]:Alec Radford, Luke Metz, and Soumith Chintala. Unsupervised representation learning with deep convolutional generative adversarial networks. In Proc. of the International Conf. on Learning Representations (ICLR), 2016.
-[^77]:Katja Schwarz, Yiyi Liao, Michael Niemeyer, and Andreas Geiger. Graf: Generative radiance fields for 3d-aware image synthesis. In Advances in Neural Information Processing Systems (NeurIPS), 2020.
-[^81]:Vincent Sitzmann, Michael Zollhofer, and Gordon Wetzstein. Scene representation networks: Continuous 3dstructure-aware neural scene representations. In Advances in Neural Information Processing Systems (NIPS), 2019.
-[^82]:Matthew Tancik, Pratul P. Srinivasan, Ben Mildenhall, Sara Fridovich-Keil, Nithin Raghavan, Utkarsh Singhal, Ravi Ramamoorthi, Jonathan T. Barron, and Ren Ng. Fourier features let networks learn high frequency functions in low dimensional domains. In Advances in Neural Information Processing Systems (NeurIPS), 2020.
+[^42]:Hiroharu Kato, Yoshitaka Ushiku, and Tatsuya Harada. Neural 3d mesh renderer. In CVPR, 2018.
+[^43]:Hanock Kwak and Byoung-Tak Zhang. Generating images part by part with composite generative adversarial networks. arXiv.org, 1607.05387, 2016.
+[^44]:Wonkwang Lee, Donggyun Kim, Seunghoon Hong, and Honglak Lee. High-fidelity synthesis with disentangled representation. arXiv.org, 2001.04296, 2020.
+[^45]:Nanbo Li, Robert Fisher, et al. Learning object-centric representations of multi-object scenes from multiple views. In NeurIPS, 2020.
+[^46]:Yiyi Liao, Katja Schwarz, Lars Mescheder, and Andreas Geiger. Towards unsupervised learning of generative models for 3d controllable image synthesis. In CVPR, 2020.
+[^47]:Lingjie Liu, Jiatao Gu, Kyaw Zaw Lin, Tat-Seng Chua, and Christian Theobalt. Neural sparse voxel fields. In NeurIPS, 2020.
+[^48]:Ming-Yu Liu, Xun Huang, Jiahui Yu, Ting-Chun Wang, and Arun Mallya. Generative adversarial networks for image and video synthesis: Algorithms and applications. arXiv.org, 2008.02793, 2020.
+[^49]:Shichen Liu, Weikai Chen, Tianye Li, and Hao Li. Soft rasterizer: Differentiable rendering for unsupervised singleview mesh reconstruction. In ICCV, 2019.
+[^50]:Shichen Liu, Shunsuke Saito, Weikai Chen, and Hao Li. Learning to infer implicit surfaces without 3d supervision. In NeurIPS, 2019.
+[^51]:Shaohui Liu, Yinda Zhang, Songyou Peng, Boxin Shi, Marc Pollefeys, and Zhaopeng Cui. DIST: rendering deep implicit signed distance function with differentiable sphere tracing. In CVPR, 2020.
+[^52]:Ziwei Liu, Xiaoxiao Li, Ping Luo, Chen Change Loy, and Xiaoou Tang. Semantic image segmentation via deep parsing network. In ICCV, 2015.
+[^53]:Francesco Locatello, Stefan Bauer, Mario Lucic, Gunnar R¨atsch, Sylvain Gelly, Bernhard Sch¨olkopf, and Olivier Bachem. Challenging common assumptions in the unsupervised learning of disentangled representations. In ICML, 2019.
+[^54]:Francesco Locatello, Dirk Weissenborn, Thomas Unterthiner, Aravindh Mahendran, Georg Heigold, Jakob Uszkoreit, Alexey Dosovitskiy, and Thomas Kipf. Objectcentric learning with slot attention. In NeurIPS, 2020.
+[^55]:Sebastian Lunz, Yingzhen Li, Andrew W. Fitzgibbon, and Nate Kushman. Inverse graphics GAN: learning to generate 3d shapes from unstructured 2d data. arXiv.org, 2020.
+[^56]:Andrew L. Maas, Awni Y. Hannun, and Andrew Y. Ng. Rectifier nonlinearities improve neural network acoustic models. In ICML Workshops, 2013.
+[^57]:Ricardo Martin-Brualla, Noha Radwan, Mehdi S. M. Sajjadi, Jonathan T. Barron, Alexey Dosovitskiy, and Daniel Duckworth. Nerf in the wild: Neural radiance fields for unconstrained photo collections. arXiv.org, 2008.02268, 2020.
+[^58]:Lars Mescheder, Andreas Geiger, and Sebastian Nowozin. Which training methods for gans do actually converge? In ICML, 2018.
+[^59]:Lars Mescheder, Michael Oechsle, Michael Niemeyer, Sebastian Nowozin, and Andreas Geiger. Occupancy networks: Learning 3d reconstruction in function space. In CVPR, 2019.
+[^60]:Mateusz Michalkiewicz, Jhony K Pontes, Dominic Jack, Mahsa Baktashmotlagh, and Anders Eriksson. Implicit surface representations as layers in neural networks. In ICCV, 2019.
+[^61]:Ben Mildenhall, Pratul P Srinivasan, Matthew Tancik, Jonathan T Barron, Ravi Ramamoorthi, and Ren Ng. NeRF: Representing scenes as neural radiance fields for view synthesis. In ECCV, 2020.
+[^62]:Thu Nguyen-Phuoc, Chuan Li, Stephen Balaban, and YongLiang Yang. Rendernet: A deep convolutional network for differentiable rendering from 3d shapes. In NeurIPS, 2018.
+[^63]:Thu Nguyen-Phuoc, Chuan Li, Lucas Theis, Christian Richardt, and Yong-Liang Yang. Hologan: Unsupervised learning of 3d representations from natural images. In ICCV, 2019.
+[^64]:Thu Nguyen-Phuoc, Christian Richardt, Long Mai, YongLiang Yang, and Niloy Mitra. Blockgan: Learning 3d objectaware scene representations from unlabelled images. In NeurIPS, 2020.
+[^65]:Michael Niemeyer, Lars Mescheder, Michael Oechsle, and Andreas Geiger. Occupancy flow: 4d reconstruction by learning particle dynamics. In ICCV, 2019.
+[^66]:Michael Niemeyer, Lars Mescheder, Michael Oechsle, and Andreas Geiger. Differentiable volumetric rendering: Learning implicit 3d representations without 3d supervision. In CVPR, 2020.
+[^67]:Michael Oechsle, Lars Mescheder, Michael Niemeyer, Thilo Strauss, and Andreas Geiger. Texture fields: Learning texture representations in function space. In ICCV, 2019.
+[^68]:Michael Oechsle, Michael Niemeyer, Christian Reiser, Lars Mescheder, Thilo Strauss, and Andreas Geiger. Learning implicit surface light fields. In Proc. of the International Conf. on 3D Vision (3DV), 2020.
+[^69]:Jeong Joon Park, Peter Florence, Julian Straub, Richard A. Newcombe, and Steven Lovegrove. Deepsdf: Learning continuous signed distance functions for shape representation. In CVPR, 2019.
+[^70]:Keunhong Park, Konstantinos Rematas, Ali Farhadi, and Steven M. Seitz. Photoshape: Photorealistic materials for large-scale shape collections. Communications of the ACM, 2018.
+[^71]:William S. Peebles, John Peebles, Jun-Yan Zhu, Alexei A. Efros, and Antonio Torralba. The hessian penalty: A weak prior for unsupervised disentanglement. In ECCV, 2020.
+[^72]:Songyou Peng, Michael Niemeyer, Lars Mescheder, Marc Pollefeys, and Andreas Geiger. Convolutional occupancy networks. In ECCV, 2020.
+[^73]:Alec Radford, Luke Metz, and Soumith Chintala. Unsupervised representation learning with deep convolutional generative adversarial networks. In ICLR, 2016.
+[^74]:Scott Reed, Kihyuk Sohn, Yuting Zhang, and Honglak Lee. Learning to disentangle factors of variation with manifold interaction. In ICML, 2014.
+[^75]:Danilo Jimenez Rezende, S. M. Ali Eslami, Shakir Mohamed, Peter Battaglia, Max Jaderberg, and Nicolas Heess. Unsupervised learning of 3d structure from images. In NeurIPS, 2016.
+[^76]:Shunsuke Saito, Zeng Huang, Ryota Natsume, Shigeo Morishima, Angjoo Kanazawa, and Hao Li. Pifu: Pixel-aligned implicit function for high-resolution clothed human digitization. In ICCV, 2019.
+[^77]:Katja Schwarz, Yiyi Liao, Michael Niemeyer, and Andreas Geiger. Graf: Generative radiance fields for 3d-aware image synthesis. In NeurIPS, 2020.
+[^78]:Yujun Shen, Jinjin Gu, Xiaoou Tang, and Bolei Zhou. Interpreting the latent space of gans for semantic face editing. In CVPR, 2020.
+[^79]:Vincent Sitzmann, Julien N.P. Martel, Alexander W. Bergman, David B. Lindell, and Gordon Wetzstein. Implicit neural representations with periodic activation functions. In NeurIPS, 2020.
+[^80]:Vincent Sitzmann, Justus Thies, Felix Heide, Matthias Nießner, Gordon Wetzstein, and Michael Zollh¨ofer. Deepvoxels: Learning persistent 3d feature embeddings. In CVPR, 2019.
+[^81]:Vincent Sitzmann, Michael Zollhofer, and Gordon Wetzstein. Scene representation networks: Continuous 3dstructure-aware neural scene representations. In NeurIPS, 2019.
+[^82]:Matthew Tancik, Pratul P. Srinivasan, Ben Mildenhall, Sara Fridovich-Keil, Nithin Raghavan, Utkarsh Singhal, Ravi Ramamoorthi, Jonathan T. Barron, and Ren Ng. Fourier features let networks learn high frequency functions in low dimensional domains. In NeurIPS, 2020.
 [^83]:Ayush Tewari, Ohad Fried, Justus Thies, Vincent Sitzmann, Stephen Lombardi, Kalyan Sunkavalli, Ricardo MartinBrualla, Tomas Simon, Jason M. Saragih, Matthias Nießner, Rohit Pandey, Sean Ryan Fanello, Gordon Wetzstein, JunYan Zhu, Christian Theobalt, Maneesh Agrawala, Eli Shechtman, Dan B. Goldman, and Michael Zollhofer. State ¨ of the art on neural rendering. Computer Graphics Forum, 2020.
 [^84]:Justus Thies, Michael Zollhofer, and Matthias Nießner. Deferred neural rendering: image synthesis using neural textures. ACM Trans. on Graphics, 2019.
 [^85]:T. Tieleman and G. Hinton. Lecture 6.5—RmsProp: Divide the gradient by a running average of its recent magnitude. COURSERA: Neural Networks for Machine Learning, 2012.
+[^86]:Sjoerd van Steenkiste, Karol Kurach, J¨urgen Schmidhuber, and Sylvain Gelly. Investigating object compositionality in generative adversarial networks. Neural Networks, 2020.
+[^87]:XiaolongWang and Abhinav Gupta. Generative image modeling using style and structure adversarial networks. In ECCV, 2016.
+[^88]:JiajunWu, Chengkai Zhang, Tianfan Xue, Bill Freeman, and Josh Tenenbaum. Learning a probabilistic latent space of object shapes via 3d generative-adversarial modeling. In NeurIPS, 2016.
 [^89]:Bing Xu, Naiyan Wang, Tianqi Chen, and Mu Li. Empirical evaluation of rectified activations in convolutional network. arXiv.org, 1505.00853, 2015.
-[^93]: Yasin Yazici, Chuan-Sheng Foo, Stefan Winkler, Kim-Hui Yap, Georgios Piliouras, and Vijay Chandrasekhar. The unusual effectiveness of averaging in GAN training. In Proc. of the International Conf. on Learning Representations (ICLR), 2019.
+[^90]:Jianwei Yang, Anitha Kannan, Dhruv Batra, and Devi Parikh. LR-GAN: layered recursive generative adversarial networks for image generation. In ICLR, 2017.
+[^91]:Jiaolong Yang and Hongdong Li. Dense, accurate optical flow estimation with piecewise parametric model. In CVPR, 2015.
+[^92]:Lior Yariv, Yoni Kasten, Dror Moran, Meirav Galun, Matan Atzmon, Ronen Basri, and Yaron Lipman. Multiview neural surface reconstruction by disentangling geometry and appearance.  In NeurIPS, 2020.
+[^93]: Yasin Yazici, Chuan-Sheng Foo, Stefan Winkler, Kim-Hui Yap, Georgios Piliouras, and Vijay Chandrasekhar. The unusual effectiveness of averaging in GAN training. In ICLR, 2019.
+[^94]:Fisher Yu, Yinda Zhang, Shuran Song, Ari Seff, and Jianxiong Xiao. Lsun: Construction of a large-scale image dataset using deep learning with humans in the loop. arXiv.org, 1506.03365, 2015.
+[^95]:Li Zhang, Brian Curless, Aaron Hertzmann, and Steven M. Seitz. Shape and motion under varying illumination: Unifying structure from motion, photometric stereo, and multiview stereo. In ICCV, 2003.
+[^96]:Yuxuan Zhang, Wenzheng Chen, Huan Ling, Jun Gao, Yinan Zhang, Antonio Torralba, and Sanja Fidler. Image gans meet differentiable rendering for inverse graphics and interpretable 3d neural rendering. arXiv.org, 2010.09125, 2020.
+[^97]:Bo Zhao, Bo Chang, Zequn Jie, and Leonid Sigal. Modular generative adversarial networks. In ECCV, 2018.
+[^98]:Jun-Yan Zhu, Philipp Kr¨ahenb¨uhl, Eli Shechtman, and Alexei A. Efros. Learning a discriminative model for the perception of realism in composite images. In ICCV, 2015.
+[^99]:Jun-Yan Zhu, Zhoutong Zhang, Chengkai Zhang, JiajunWu, Antonio Torralba, Josh Tenenbaum, and Bill Freeman. Visual object networks: Image generation with disentangled 3d representations. In NeurIPS, 2018.

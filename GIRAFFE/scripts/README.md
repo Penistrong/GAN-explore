@@ -17,7 +17,7 @@ GIRAFFE论文荣获CVPR2021 Best Paper奖项，本次我的计算机视觉课程
   - `giraffe_on_\<datasetname\>.yaml`
     使用非默认数据集时的子配置文件，会覆盖默认配置的相关选项
   - `env.yml`
-    构建环境使用的conda环境配置
+    构建环境使用的conda环境配置，使用`conda env create -f env.yml`创建虚拟环境安装所需依赖
 - discriminator
   GAN的判别器网络部分，GIRAFFE使用的是Deep Convolutional Discriminator(from DCGAN)作为判别器网络
 - Evalutation
@@ -40,7 +40,7 @@ GIRAFFE论文荣获CVPR2021 Best Paper奖项，本次我的计算机视觉课程
 
 ## 训练与渲染
 
-运行代码时，需要将各文件夹所在的根目录作为工作目录，例如以`GIRAFFE`文件夹所在的目录作为当前工作目录，调用训练或渲染脚本时以模块的形式调用位于目录深层的相应脚本文件。
+运行代码时，需要将各文件夹所在的根目录作为工作目录，例如以`GIRAFFE`文件夹所在的目录作为当前工作目录，调用训练或渲染模块时以脚本的形式调用位于目录深层的相应模块文件
 
 根据选择的数据集，首先要计算其FID(Frechet Inception Distance)分数作为Ground Truth，训练时需要gt-FID分数去评估生成器的阶段性效果
 
